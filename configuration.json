@@ -1,0 +1,1 @@
+{"framework":"pytorch","task":"talking-head","model":{"type":"my-custom-model"},"pipeline":{"type":"my-custom-pipeline"},"allow_remote":true}
