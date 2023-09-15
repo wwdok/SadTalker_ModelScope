@@ -1,29 +1,10 @@
----
-tasks:
-- talking-head
-widgets:
-    - task: talking-head
-domain:
-- cv
-frameworks:
-- pytorch
-backbone:
-- encoder-decoder
-customized-quickstart: True
-license: Apache License 2.0
-tags:
-- sadtalker
-- talking head
-- 数字人
-
----
-
 # SadTalker
-本仓库是基于 https://github.com/OpenTalker/SadTalker （ed419f275f8a5cae7ca786349787ffebce5bd59e）改编而来。
+本仓库是基于 https://github.com/OpenTalker/SadTalker （ed419f275f8a5cae7ca786349787ffebce5bd59e）改编而来，目标是为了集成到modelscope中。
 不同点主要体现在：
 * 将代码仓库打包成modelscope library，这样就能便用几行代码调用sadtalker的能力，方便集成到其他项目里
 * 支持使用文本生成语音(仅限Linnux系统)
 
+modelscope上的镜像版本：https://modelscope.cn/models/wwd123/sadtalker
 
 该仓库包含两个代码入口，一个是本地部署的、以gradio_app.py为入口，一个是通过modelscope调用、以ms_wrapper.py为入口。
 如果你是想要使用第一种方式，请参考下面的安装，如果你是想使用第二种方式，请参考下面的代码范例。
@@ -57,11 +38,12 @@ from modelscope.models import Model
 from modelscope.pipelines import pipeline
 import shutil
 
+inference = pipeline('talking-head', model='wwd123/sadtalker', model_revision='v1.0.0')
+# two required arguments
 source_image = 'examples/source_image/man.png'
 driven_audio = 'examples/driven_audio/chinese_poem1.wav'
-out_dir = 'your-desired_output_directory'
-inference = pipeline('talking-head', model='wwdok/sadtalker', model_revision='v1.0.0')
-# custom arguments
+# other optional arguments
+out_dir = './results/' # your-desired_output_directory
 kwargs = {
     'preprocess' : 'full', # 'crop', 'resize','full'
     'still_mode' : True,
@@ -70,7 +52,7 @@ kwargs = {
     'size' : 256, # 256, 512
     'pose_style' : 0,
     'exp_scale' : 1,
-    'result_dir': './results/'
+    'result_dir': out_dir
 }
 
 video_path = inference(source_image, driven_audio=driven_audio, **kwargs)
