@@ -1,4 +1,7 @@
-# SadTalker
+# SadTalker within modelscope
+
+For English Reader, please refer to [README-EN.md](README-EN.md)。
+
 本仓库是基于 https://github.com/OpenTalker/SadTalker （ed419f275f8a5cae7ca786349787ffebce5bd59e）改编而来，目标是为了集成到modelscope中。
 不同点主要体现在：
 * 将sadtalker仓库封装成成modelscope library，这样就能便用几行代码调用sadtalker的能力，方便集成到其他项目里
