@@ -122,28 +122,28 @@ class DECODER(nn.Module):
 
     def forward(self, batch):
 
-        z = batch['z']                                          #bs latent_size
+        z = batch['z']  # torch.Size([1, 64])， bs latent_size
         bs = z.shape[0]
         class_id = batch['class']
-        ref = batch['ref']                             #bs 6
-        audio_in = batch['audio_emb']                           # bs seq_len audio_emb_in_size
+        ref = batch['ref'] # bs 6
+        audio_in = batch['audio_emb']  # torch.Size([1, 32, 512])，bs seq_len audio_emb_in_size
         #print('audio_in: ', audio_in[:, :, :10])
 
-        audio_out = self.linear_audio(audio_in)                 # bs seq_len audio_emb_out_size
+        audio_out = self.linear_audio(audio_in) # torch.Size([1, 32, 6])，bs seq_len audio_emb_out_size
         #print('audio_out: ', audio_out[:, :, :10])
-        audio_out = audio_out.reshape([bs, -1])                 # bs seq_len*audio_emb_out_size
-        class_bias = self.classbias[class_id]                   #bs latent_size
+        audio_out = audio_out.reshape([bs, -1]) # torch.Size([1, 192])，bs seq_len*audio_emb_out_size
+        class_bias = self.classbias[class_id] # torch.Size([1, 64])，bs latent_size
 
         z = z + class_bias
-        x_in = torch.cat([ref, z, audio_out], dim=-1)
-        x_out = self.MLP(x_in)                                  # bs layer_sizes[-1]
-        x_out = x_out.reshape((bs, self.seq_len, -1))
+        x_in = torch.cat([ref, z, audio_out], dim=-1) # torch.Size([1, 262])，262=6+64+192
+        x_out = self.MLP(x_in)  # torch.Size([1, 192])，bs layer_sizes[-1]
+        x_out = x_out.reshape((bs, self.seq_len, -1)) # torch.Size([1, 32, 6])
 
         #print('x_out: ', x_out)
 
-        pose_emb = self.resunet(x_out.unsqueeze(1))             #bs 1 seq_len 6
+        pose_emb = self.resunet(x_out.unsqueeze(1)) # torch.Size([1, 1, 32, 6])，bs 1 seq_len 6
 
-        pose_motion_pred = self.pose_linear(pose_emb.squeeze(1))       #bs seq_len 6
+        pose_motion_pred = self.pose_linear(pose_emb.squeeze(1)) # torch.Size([1, 32, 6])，bs seq_len 6
 
         batch.update({'pose_motion_pred':pose_motion_pred})
         return batch

@@ -95,12 +95,15 @@ class ReconNetWrapper(nn.Module):
                 nn.init.constant_(m.bias, 0.)
 
     def forward(self, x):
+        print(f"==>> ReconNetWrapper forward x.shape: {x.shape}") # torch.Size([1, 3, 224, 224])
         x = self.backbone(x)
+        print(f"==>> ReconNetWrapper forward x.shape: {x.shape}") # torch.Size([1, 2048, 1, 1])
         if not self.use_last_fc:
             output = []
             for layer in self.final_layers:
                 output.append(layer(x))
             x = torch.flatten(torch.cat(output, dim=1), 1)
+        print(f"==>> ReconNetWrapper forward x.shape: {x.shape}") # torch.Size([1, 257])
         return x
 
 

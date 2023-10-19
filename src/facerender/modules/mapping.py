@@ -30,18 +30,18 @@ class MappingNet(nn.Module):
         self.fc_exp = nn.Linear(descriptor_nc, 3*num_kp)
 
     def forward(self, input_3dmm):
-        out = self.first(input_3dmm)
+        out = self.first(input_3dmm) # input_3dmm:torch.Size([1, 73, 27]),out:torch.Size([1, 1024, 21])
         for i in range(self.layer):
             model = getattr(self, 'encoder' + str(i))
-            out = model(out) + out[:,:,3:-3]
-        out = self.pooling(out)
-        out = out.view(out.shape[0], -1)
+            out = model(out) + out[:,:,3:-3] # torch.Size([1, 1024, 15]), torch.Size([1, 1024, 9]), torch.Size([1, 1024, 3])
+        out = self.pooling(out) # torch.Size([1, 1024, 1])
+        out = out.view(out.shape[0], -1) # torch.Size([1, 1024])
         #print('out:', out.shape)
 
-        yaw = self.fc_yaw(out)
-        pitch = self.fc_pitch(out)
-        roll = self.fc_roll(out)
-        t = self.fc_t(out)
-        exp = self.fc_exp(out)
+        yaw = self.fc_yaw(out) # torch.Size([1, 66])
+        pitch = self.fc_pitch(out) # torch.Size([1, 66])
+        roll = self.fc_roll(out) # torch.Size([1, 66])
+        t = self.fc_t(out) # torch.Size([1, 3])
+        exp = self.fc_exp(out) # torch.Size([1, 45]) 
 
         return {'yaw': yaw, 'pitch': pitch, 'roll': roll, 't': t, 'exp': exp} 

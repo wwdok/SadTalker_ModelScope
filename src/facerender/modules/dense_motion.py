@@ -32,10 +32,10 @@ class DenseMotionNetwork(nn.Module):
 
 
     def create_sparse_motions(self, feature, kp_driving, kp_source):
-        bs, _, d, h, w = feature.shape
-        identity_grid = make_coordinate_grid((d, h, w), type=kp_source['value'].type())
+        bs, _, d, h, w = feature.shape # torch.Size([1, 4, 16, 64, 64])
+        identity_grid = make_coordinate_grid((d, h, w), type=kp_source['value'].type()) # torch.Size([16, 64, 64, 3])
         identity_grid = identity_grid.view(1, 1, d, h, w, 3)
-        coordinate_grid = identity_grid - kp_driving['value'].view(bs, self.num_kp, 1, 1, 1, 3)
+        coordinate_grid = identity_grid - kp_driving['value'].view(bs, self.num_kp, 1, 1, 1, 3) # torch.Size([1, 15, 16, 64, 64, 3])
         
         # if 'jacobian' in kp_driving:
         if 'jacobian' in kp_driving and kp_driving['jacobian'] is not None:
@@ -46,67 +46,67 @@ class DenseMotionNetwork(nn.Module):
             coordinate_grid = coordinate_grid.squeeze(-1)                  
 
 
-        driving_to_source = coordinate_grid + kp_source['value'].view(bs, self.num_kp, 1, 1, 1, 3)    # (bs, num_kp, d, h, w, 3)
+        driving_to_source = coordinate_grid + kp_source['value'].view(bs, self.num_kp, 1, 1, 1, 3) # torch.Size([1, 15, 16, 64, 64, 3]), (bs, num_kp, d, h, w, 3)
 
         #adding background feature
         identity_grid = identity_grid.repeat(bs, 1, 1, 1, 1, 1)
-        sparse_motions = torch.cat([identity_grid, driving_to_source], dim=1)                #bs num_kp+1 d h w 3
+        sparse_motions = torch.cat([identity_grid, driving_to_source], dim=1) # torch.Size([1, 16, 16, 64, 64, 3]), bs num_kp+1 d h w 3
         
         # sparse_motions = driving_to_source
 
         return sparse_motions
 
-    def create_deformed_feature(self, feature, sparse_motions):
+    def create_deformed_feature(self, feature, sparse_motions): # feature: torch.Size([1, 4, 16, 64, 64]), sparse_motions: torch.Size([1, 16, 16, 64, 64, 3])
         bs, _, d, h, w = feature.shape
-        feature_repeat = feature.unsqueeze(1).unsqueeze(1).repeat(1, self.num_kp+1, 1, 1, 1, 1, 1)      # (bs, num_kp+1, 1, c, d, h, w)
-        feature_repeat = feature_repeat.view(bs * (self.num_kp+1), -1, d, h, w)                         # (bs*(num_kp+1), c, d, h, w)
-        sparse_motions = sparse_motions.view((bs * (self.num_kp+1), d, h, w, -1))                       # (bs*(num_kp+1), d, h, w, 3) !!!!
-        sparse_deformed = F.grid_sample(feature_repeat, sparse_motions)
-        sparse_deformed = sparse_deformed.view((bs, self.num_kp+1, -1, d, h, w))                        # (bs, num_kp+1, c, d, h, w)
+        feature_repeat = feature.unsqueeze(1).unsqueeze(1).repeat(1, self.num_kp+1, 1, 1, 1, 1, 1)      # (bs, num_kp+1, 1, c, d, h, w), torch.Size([1, 16, 1, 4, 16, 64, 64])
+        feature_repeat = feature_repeat.view(bs * (self.num_kp+1), -1, d, h, w)                         # (bs*(num_kp+1), c, d, h, w),   torch.Size([16, 4,  16, 64, 64])
+        sparse_motions = sparse_motions.view((bs * (self.num_kp+1), d, h, w, -1))                       # (bs*(num_kp+1), d, h, w, 3),   torch.Size([16, 16, 64, 64, 3])
+        sparse_deformed = F.grid_sample(feature_repeat, sparse_motions) # torch.Size([16, 4, 16, 64, 64])
+        sparse_deformed = sparse_deformed.view((bs, self.num_kp+1, -1, d, h, w))                        # (bs, num_kp+1, c, d, h, w),    torch.Size([1, 16, 4, 16, 64, 64])
         return sparse_deformed
 
-    def create_heatmap_representations(self, feature, kp_driving, kp_source):
-        spatial_size = feature.shape[3:]
-        gaussian_driving = kp2gaussian(kp_driving, spatial_size=spatial_size, kp_variance=0.01)
-        gaussian_source = kp2gaussian(kp_source, spatial_size=spatial_size, kp_variance=0.01)
+    def create_heatmap_representations(self, feature, kp_driving, kp_source): # torch.Size([1, 16, 4, 16, 64, 64]), torch.Size([1, 15, 3]),torch.Size([1, 15, 3])
+        spatial_size = feature.shape[3:] # torch.Size([16, 64, 64])
+        gaussian_driving = kp2gaussian(kp_driving, spatial_size=spatial_size, kp_variance=0.01) # torch.Size([1, 15, 16, 64, 64])
+        gaussian_source = kp2gaussian(kp_source, spatial_size=spatial_size, kp_variance=0.01)   # torch.Size([1, 15, 16, 64, 64])
         heatmap = gaussian_driving - gaussian_source
 
         # adding background feature
-        zeros = torch.zeros(heatmap.shape[0], 1, spatial_size[0], spatial_size[1], spatial_size[2]).type(heatmap.type())
-        heatmap = torch.cat([zeros, heatmap], dim=1)
+        zeros = torch.zeros(heatmap.shape[0], 1, spatial_size[0], spatial_size[1], spatial_size[2]).type(heatmap.type()) # torch.Size([1, 1, 16, 64, 64])
+        heatmap = torch.cat([zeros, heatmap], dim=1) # torch.Size([1, 16, 16, 64, 64])
         heatmap = heatmap.unsqueeze(2)         # (bs, num_kp+1, 1, d, h, w)
         return heatmap
 
     def forward(self, feature, kp_driving, kp_source):
-        bs, _, d, h, w = feature.shape
+        bs, _, d, h, w = feature.shape # torch.Size([1, 32, 16, 64, 64])
 
-        feature = self.compress(feature)
+        feature = self.compress(feature) # torch.Size([1, 4, 16, 64, 64])
         feature = self.norm(feature)
         feature = F.relu(feature)
 
         out_dict = dict()
-        sparse_motion = self.create_sparse_motions(feature, kp_driving, kp_source)
-        deformed_feature = self.create_deformed_feature(feature, sparse_motion)
+        sparse_motion = self.create_sparse_motions(feature, kp_driving, kp_source) # torch.Size([1, 16, 16, 64, 64, 3])
+        deformed_feature = self.create_deformed_feature(feature, sparse_motion) # torch.Size([1, 16, 4, 16, 64, 64])
 
-        heatmap = self.create_heatmap_representations(deformed_feature, kp_driving, kp_source)
+        heatmap = self.create_heatmap_representations(deformed_feature, kp_driving, kp_source) # torch.Size([1, 16, 1, 16, 64, 64])
 
-        input_ = torch.cat([heatmap, deformed_feature], dim=2)
-        input_ = input_.view(bs, -1, d, h, w)
+        input_ = torch.cat([heatmap, deformed_feature], dim=2) # torch.Size([1, 16, 5, 16, 64, 64])
+        input_ = input_.view(bs, -1, d, h, w) # torch.Size([1, 80, 16, 64, 64])
 
         # input = deformed_feature.view(bs, -1, d, h, w)      # (bs, num_kp+1 * c, d, h, w)
 
-        prediction = self.hourglass(input_)
+        prediction = self.hourglass(input_) # torch.Size([1, 112, 16, 64, 64])
 
 
-        mask = self.mask(prediction)
+        mask = self.mask(prediction) # torch.Size([1, 16, 16, 64, 64])
         mask = F.softmax(mask, dim=1)
         out_dict['mask'] = mask
-        mask = mask.unsqueeze(2)                                   # (bs, num_kp+1, 1, d, h, w)
+        mask = mask.unsqueeze(2)  # torch.Size([1, 16, 1, 16, 64, 64]), (bs, num_kp+1, 1, d, h, w)
         
         zeros_mask = torch.zeros_like(mask)   
         mask = torch.where(mask < 1e-3, zeros_mask, mask) 
 
-        sparse_motion = sparse_motion.permute(0, 1, 5, 2, 3, 4)    # (bs, num_kp+1, 3, d, h, w)
+        sparse_motion = sparse_motion.permute(0, 1, 5, 2, 3, 4)    # (bs, num_kp+1, 3, d, h, w),torch.Size([1, 16, 3, 16, 64, 64])
         deformation = (sparse_motion * mask).sum(dim=1)            # (bs, 3, d, h, w)
         deformation = deformation.permute(0, 2, 3, 4, 1)           # (bs, d, h, w, 3)
 
@@ -114,8 +114,8 @@ class DenseMotionNetwork(nn.Module):
 
         if self.occlusion:
             bs, c, d, h, w = prediction.shape
-            prediction = prediction.view(bs, -1, h, w)
-            occlusion_map = torch.sigmoid(self.occlusion(prediction))
+            prediction = prediction.view(bs, -1, h, w) # torch.Size([1, 1792, 64, 64])
+            occlusion_map = torch.sigmoid(self.occlusion(prediction)) # torch.Size([1, 1, 64, 64])
             out_dict['occlusion_map'] = occlusion_map
 
         return out_dict

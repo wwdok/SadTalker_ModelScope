@@ -44,11 +44,9 @@ windows安装ffmpeg会有所不同，请百度一下。
 
 ## 安装
 
-安装最新版的modelscope：
+安装最新版(≥1.9.2)的modelscope：
 ```
-pip uninstall modelscope
-pip install -r https://raw.githubusercontent.com/modelscope/modelscope/master/requirements/framework.txt
-pip install git+https://github.com/modelscope/modelscope.git
+pip install -U modelscope
 ```
 
 ## 运行
@@ -90,8 +88,3 @@ print(f"==>> video_path: {video_path}")
 * `pose_style`: 是条件VAE（即PoseVAE）的条件输入，使用的地方最终位于src/audio2pose_models/cvae.py里的`class DECODER`的`def forward`。
 * `exp_scale`: 越大的话表情越夸张。
 * `result_dir`: 结果输出路径。
-
-# 待做
-
-- [ ] 支持将sadtalker合成的视频再喂给wav2lip，优化唇部
-- [ ] 支持其他TTS，比如vits-bert，支持各类平台系统使用TTS

@@ -41,6 +41,7 @@ class AnimateFromCoeff():
                                                     **config['model_params']['common_params'])
         kp_extractor = KPDetector(**config['model_params']['kp_detector_params'],
                                     **config['model_params']['common_params'])
+        # 目前代码仓库没用到he_estimator
         he_estimator = HEEstimator(**config['model_params']['he_estimator_params'],
                                **config['model_params']['common_params'])
         mapping = MappingNet(**config['model_params']['mapping_params'])
@@ -156,9 +157,9 @@ class AnimateFromCoeff():
 
     def generate(self, x, video_save_dir, pic_path, crop_info, enhancer=None, background_enhancer=None, preprocess='crop', img_size=256):
 
-        source_image=x['source_image'].type(torch.FloatTensor)
-        source_semantics=x['source_semantics'].type(torch.FloatTensor)
-        target_semantics=x['target_semantics_list'].type(torch.FloatTensor) 
+        source_image=x['source_image'].type(torch.FloatTensor) # torch.Size([1, 3, 256, 256])
+        source_semantics=x['source_semantics'].type(torch.FloatTensor) # torch.Size([1, 73, 27])
+        target_semantics=x['target_semantics_list'].type(torch.FloatTensor) # torch.Size([1, 136, 73, 27])
         source_image=source_image.to(self.device)
         source_semantics=source_semantics.to(self.device)
         target_semantics=target_semantics.to(self.device)

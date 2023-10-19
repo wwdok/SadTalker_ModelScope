@@ -24,8 +24,12 @@ class Conv2d(nn.Module):
             return out
 
 class SimpleWrapperV2(nn.Module):
+    """
+    用于exp to expression，对应论文中Fig 3中的Audio Encoder和Mapping
+    """
     def __init__(self) -> None:
         super().__init__()
+        # 这个audio encoder跟PoseVAE中的AudioEncoder模型结构一米一样，都是把每一时间步、形状为$(80, 16)$的音频梅尔谱图编码成$(512)$的向量，但可以看出，这两个模型不共享权重。
         self.audio_encoder = nn.Sequential(
             Conv2d(1, 32, kernel_size=3, stride=1, padding=1),
             Conv2d(32, 32, kernel_size=3, stride=1, padding=1, residual=True),
@@ -65,10 +69,16 @@ class SimpleWrapperV2(nn.Module):
         nn.init.constant_(self.mapping1.bias, 0.)
 
     def forward(self, x, ref, ratio):
-        x = self.audio_encoder(x).view(x.size(0), -1)
+        x = self.audio_encoder(x).view(x.size(0), -1) # audio_encoder把x从形状[BS*T 1 80 16]编码成形状[BS*T,512]
+        # 这里T=10，它其实来自于for 循环的步长，含义跟batch size 差不多
+        # print(f"==>> x.shape: {x.shape}") # torch.Size([10, 512])
         ref_reshape = ref.reshape(x.size(0), -1)
+        # print(f"==>> ref_reshape.shape: {ref_reshape.shape}") # torch.Size([10, 64])
         ratio = ratio.reshape(x.size(0), -1)
+        # print(f"==>> ratio.shape: {ratio.shape}") # torch.Size([10, 1])
         
         y = self.mapping1(torch.cat([x, ref_reshape, ratio], dim=1)) 
+        # print(f"==>> y.shape: {y.shape}") # torch.Size([10, 64])
         out = y.reshape(ref.shape[0], ref.shape[1], -1) #+ ref # resudial
+        # print(f"==>> out.shape: {out.shape}") # torch.Size([1, 10, 64])
         return out
