@@ -125,6 +125,7 @@ def make_animation(source_image, source_semantics, target_semantics,
             kp_driving = keypoint_transformation(kp_canonical, he_driving) # value:torch.Size([1, 15, 3])
                 
             kp_norm = kp_driving
+            # 每一帧的source_image和kp_source都是不变的，只有kp_driving在变
             out = generator(source_image, kp_source=kp_source, kp_driving=kp_norm) # torch.Size([1, 3, 256, 256])
             '''
             source_image_new = out['prediction'].squeeze(1)
