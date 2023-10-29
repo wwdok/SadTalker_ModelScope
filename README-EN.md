@@ -40,11 +40,7 @@ Installing FFmpeg on Windows will be different, so please search online for the 
 
 ## Setup environment
 
-Install the latest version of Modelscope:
-```
-pip uninstall modelscope -y
-pip install -U modelscope
-```
+See[this doc](doc/installation.md)
 
 ## Running
 

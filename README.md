@@ -41,11 +41,7 @@ windows安装ffmpeg会有所不同，请百度一下。
 
 ## 配置环境
 
-安装最新版的modelscope：
-```
-pip uninstall modelscope -y
-pip install -U modelscope
-```
+见[配置环境教程](doc/installation_CN.md)
 
 ## 运行
 

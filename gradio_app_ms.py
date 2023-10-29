@@ -54,8 +54,8 @@ def launch_pipeline_talkinghead(source_image, driven_audio, preprocess='crop',
 
 def sadtalker_webui():
     with gr.Blocks() as demo:
-        gr.Markdown("""该标签页的功能基于[SadTalker](https://sadtalker.github.io)实现，要使用该标签页，请按照[教程](https://github.com/wwdok/sadtalker_modelscope/tree/main/doc/installation_CN.md)安装相关依赖。\n
-                    The function of this tab is implemented based on [SadTalker](https://sadtalker.github.io), to use this tab, you should follow the installation [guide](https://github.com/wwdok/sadtalker_modelscope/tree/main/doc/installation.md) """)
+        gr.Markdown("""该标签页的功能基于[SadTalker](https://sadtalker.github.io)实现，要使用该标签页，请按照[教程](https://github.com/wwdok/sadtalker_modelscope/tree/master/doc/installation_CN.md)安装相关依赖。\n
+                    The function of this tab is implemented based on [SadTalker](https://sadtalker.github.io), to use this tab, you should follow the installation [guide](https://github.com/wwdok/sadtalker_modelscope/tree/master/doc/installation.md) """)
         
         with gr.Row(equal_height=False):
             with gr.Column(variant='panel'):
