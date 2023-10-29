@@ -2,18 +2,15 @@
 
 For English Reader, please refer to [README-EN.md](README-EN.md)。
 
-本仓库是基于 https://github.com/OpenTalker/SadTalker （ed419f275f8a5cae7ca786349787ffebce5bd59e）改编而来，目标是为了集成到modelscope中。
-不同点主要体现在：
-* 将sadtalker仓库封装成成modelscope library，这样就能便用几行代码调用sadtalker的能力，方便集成到其他项目里
-* 支持使用文本生成语音(仅限Linnux系统)
+本仓库是基于 https://github.com/OpenTalker/SadTalker （ed419f275f8a5cae7ca786349787ffebce5bd59e）改编而来，目标是为了将sadtalker仓库封装成modelscope library，这样就能便用几行代码调用sadtalker的能力，方便集成到其他项目里，且本仓库支持使用文本生成语音（edge tts和sambert），无需用户自己上传音频，方便用户快速试玩。
 
-modelscope托管的仓库：https://modelscope.cn/models/wwd123/sadtalker
+modelscope托管的仓库：https://modelscope.cn/models/wwd123/sadtalker (是本github仓库的精减版，两处的代码有轻微的不同。)
 
-该仓库包含两种方式，第一种是本地部署的、以gradio_app.py为入口，这是本仓库的主要用途，另一个是通过modelscope调用、以ms_wrapper.py为入口，这是modelscope托管的仓库的主要用途。两者的代码有所不同。
+该仓库主要分为两种使用方式，第一种运行时跑的是本仓库根目录下的代码，入口文件是gradio_app.py。另一个是通过modelscope调用、运行时跑的是modelscope cache目录下的代码，入口文件是gradio_app_ms.py、demo.ipynb、ms_wrapper.py。
 
 # 第一种使用方式
 
-## 安装
+## 配置环境
 
 以Linux为例，考虑到在安装过程中可能会出现某些pypi包会覆盖安装的问题，安装上讲究顺序。
 1. 如果你还没安装pytorch，先安装pytorch：注意pytorch版本要跟cuda版本对应。
@@ -33,7 +30,7 @@ sudo apt update
 sudo apt install ffmpeg
 ```
 windows安装ffmpeg会有所不同，请百度一下。
-7. 下载预训练模型权重：`bash download_models.sh`。这一步会可能耗时，你也可以把里面的链接粘贴到其他下载器下载，下载完再移动到指定文件夹下。完成后会生成checkpoints和gfpgan文件夹，里面分别有4个模型权重文件。
+7. 下载预训练模型权重：`bash download_models.sh`。这一步会可能耗时，你也可以把里面的链接粘贴到其他下载器下载，下载完再移动到指定文件夹下。完成后会生成checkpoints和gfpgan/weights文件夹，里面分别有4个模型权重文件。
 
 ## 运行
 
@@ -42,13 +39,12 @@ windows安装ffmpeg会有所不同，请百度一下。
 
 # 第二种使用方式
 
-## 安装
+## 配置环境
 
 安装最新版的modelscope：
 ```
-pip uninstall modelscope
-pip install -r https://raw.githubusercontent.com/modelscope/modelscope/master/requirements/framework.txt
-pip install git+https://github.com/modelscope/modelscope.git
+pip uninstall modelscope -y
+pip install -U modelscope
 ```
 
 ## 运行
@@ -76,6 +72,8 @@ kwargs = {
 video_path = inference(source_image, driven_audio=driven_audio, **kwargs)
 print(f"==>> video_path: {video_path}")
 ```
+
+本仓库也提供了基于modelscope封装好的sadtalker库的webui：`python gradio_app_ms.py`。
 你可以在Colab上试玩：[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1C2TjndoDsUXlW6P10peN66p4I9ImEHyt?usp=sharing/)，也可以在本地试玩[demo.ipynb](demo.ipynb)
 
 
@@ -90,8 +88,3 @@ print(f"==>> video_path: {video_path}")
 * `pose_style`: 是条件VAE（即PoseVAE）的条件输入，使用的地方最终位于src/audio2pose_models/cvae.py里的`class DECODER`的`def forward`。
 * `exp_scale`: 越大的话表情越夸张。
 * `result_dir`: 结果输出路径。
-
-# 待做
-
-- [ ] 支持将sadtalker合成的视频再喂给wav2lip，优化唇部
-- [ ] 支持其他TTS，比如vits-bert，支持各类平台系统使用TTS

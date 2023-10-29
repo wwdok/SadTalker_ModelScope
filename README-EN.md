@@ -1,18 +1,14 @@
  # SadTalker within modelscope
 
-This repo is adapted from https://github.com/OpenTalker/SadTalker (ed419f275f8a5cae7ca786349787ffebce5bd59e) with target to intergrate into modelscope。
+This repository is adapted from: https://github.com/OpenTalker/SadTalker (ed419f275f8a5cae7ca786349787ffebce5bd59e), The goal is to wrap sadtalker as a modelscope library, so that sadtalker's capabilities can be invoked with a few lines of code for easy integration into other projects, and this repo supports using TTS (edge tts and sambert) so that users don't need to upload their own audio. Easy for users to play quickly.
 
-The main differences from original Sadtalker repo are as follows:
-* The sadtalker repository are wrapped into a modelscope library, making it easy to integrate its capabilities into other projects with just a few lines of code.
-* Supports text-to-speech synthesis (only for Linux systems now).
+Modelscope hosted repo: https://modelscope.cn/models/wwd123/sadtalker ( it's the mini edition of this github repo, their codes have slight differences.)
 
-Modelscope-hosted repository: https://modelscope.cn/models/wwd123/sadtalker
-
-This repository contains two ways of usage. The first one is for local deployment, where the entry point is `gradio_app.py`. This is the main purpose of this repository. The other way is calling it through modelscope, where the entry point is `ms_wrapper.py`. This is the main purpose of the modelscope-hosted repository. The code for the two ways differs slightly.
+The repo can mainly divided into two ways to use, the first one running the code in the root directory, the entrance file is `gradio_app.py`. The other one running the code in the modelscope cache directory, the entrance file is `gradio_app_ms.py`, `demo.ipynb`, `ms_wrapper.py`. 
 
 # Usage 1
 
-## Installation
+## Setup environment
 
 Taking Linux as an example, the installation order is important due to the possibility of certain pypi packages overwriting each other during the installation process.
 
@@ -33,7 +29,7 @@ sudo apt update
 sudo apt install ffmpeg
 ```
 Installing FFmpeg on Windows will be different, so please search online for the instructions.
-7. Download the pretrained model weights: `bash download_models.sh`. This step may take some time. Alternatively, you can copy the links inside the script and use a download manager to download them. Once downloaded, move the weights to the specified folders. After completion, the `checkpoints` and `gfpgan` folders will be generated, each containing four model weight files.
+7. Download the pretrained model weights: `bash download_models.sh`. This step may take some time. Alternatively, you can copy the links inside the script and use a download manager to download them. Once downloaded, move the weights to the specified folders. After completion, the `checkpoints` and `gfpgan/weights` folders will be generated, each containing four model weight files.
 
 ## Running
 
@@ -42,13 +38,12 @@ Installing FFmpeg on Windows will be different, so please search online for the 
 
 # Usage 2
 
-## Installation
+## Setup environment
 
 Install the latest version of Modelscope:
 ```
-pip uninstall modelscope
-pip install -r https://raw.githubusercontent.com/modelscope/modelscope/master/requirements/framework.txt
-pip install git+https://github.com/modelscope/modelscope.git
+pip uninstall modelscope -y
+pip install -U modelscope
 ```
 
 ## Running
@@ -77,6 +72,8 @@ video_path = inference(source_image, driven_audio=driven_audio, **kwargs)
 print(f"==>> video_path: {video_path}")
 ```
 
+This repo also provides the webui that invokes the wrapped sadtalker modelscope library：`python gradio_app_ms.py`.
+
 You can try it out on Colab: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1C2TjndoDsUXlW6P10peN66p4I9ImEHyt?usp=sharing/), or run it locally with [demo.ipynb](demo.ipynb).
 
 ### Parameter Explanation
@@ -92,8 +89,3 @@ You can try it out on Colab: [![Open In Colab](https://colab.research.google.com
 * `exp_scale`: The larger the value, the more exaggerated the expression.
 * `result_dir`: The path for the output results.
 
-
-# To-Do
-
-- [ ] Support lip enhancement using the video synthesized by SadTalker with Wav2Lip.
-- [ ] Support other TTS models, such as VITS-BERT, and make it compatible with various platforms and systems.```
