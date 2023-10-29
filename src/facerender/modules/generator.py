@@ -118,6 +118,7 @@ class OcclusionAwareGenerator(nn.Module):
 
 
 class SPADEDecoder(nn.Module):
+    # 专门用于OcclusionAwareSPADEGenerator
     def __init__(self):
         super().__init__()
         ic = 256
@@ -138,20 +139,20 @@ class SPADEDecoder(nn.Module):
         self.up = nn.Upsample(scale_factor=2)
         
     def forward(self, feature):
-        seg = feature
-        x = self.fc(feature)
+        seg = feature # torch.Size([1, 256, 64, 64])
+        x = self.fc(feature) # torch.Size([1, 512, 64, 64])
         x = self.G_middle_0(x, seg)
         x = self.G_middle_1(x, seg)
         x = self.G_middle_2(x, seg)
         x = self.G_middle_3(x, seg)
         x = self.G_middle_4(x, seg)
-        x = self.G_middle_5(x, seg)
-        x = self.up(x)                
-        x = self.up_0(x, seg)         # 256, 128, 128
-        x = self.up(x)                
-        x = self.up_1(x, seg)         # 64, 256, 256
+        x = self.G_middle_5(x, seg) # torch.Size([1, 512, 64, 64])
+        x = self.up(x)  # torch.Size([1, 512, 128, 128])               
+        x = self.up_0(x, seg) # torch.Size([1, 256, 128, 128])
+        x = self.up(x)  # torch.Size([1, 256, 256, 256])            
+        x = self.up_1(x, seg) # torch.Size([1, 64, 256, 256])
 
-        x = self.conv_img(F.leaky_relu(x, 2e-1))
+        x = self.conv_img(F.leaky_relu(x, 2e-1)) # torch.Size([1, 3, 256, 256])
         # x = torch.tanh(x)
         x = F.sigmoid(x)
         
@@ -159,7 +160,7 @@ class SPADEDecoder(nn.Module):
 
 
 class OcclusionAwareSPADEGenerator(nn.Module):
-
+    # 和OcclusionAwareGenerator的差异在于解码部分使用了SPADEDecoder
     def __init__(self, image_channel, feature_channel, num_kp, block_expansion, max_features, num_down_blocks, reshape_channel, reshape_depth,
                  num_resblocks, estimate_occlusion_map=False, dense_motion_params=None, estimate_jacobian=False):
         super(OcclusionAwareSPADEGenerator, self).__init__()
@@ -208,21 +209,26 @@ class OcclusionAwareSPADEGenerator(nn.Module):
         return F.grid_sample(inp, deformation)
 
     def forward(self, source_image, kp_driving, kp_source):
+        # print(f"==>> source_image.shape: {source_image.shape}") # torch.Size([1, 3, 256, 256])
+        # print(f"==>> kp_driving.shape: {kp_driving.shape}") # torch.Size([1, 15, 3])
+        # print(f"==>> kp_source.shape: {kp_source.shape}") # torch.Size([1, 15, 3])
         # Encoding (downsampling) part
-        out = self.first(source_image)
+        out = self.first(source_image) # torch.Size([1, 64, 256, 256])
         for i in range(len(self.down_blocks)):
             out = self.down_blocks[i](out)
-        out = self.second(out)
+        print(f"==>> 1.out.shape: {out.shape}") # torch.Size([1, 256, 64, 64])
+        out = self.second(out) # torch.Size([1, 512, 64, 64])
         bs, c, h, w = out.shape
-        # print(out.shape)
-        feature_3d = out.view(bs, self.reshape_channel, self.reshape_depth, h ,w) 
-        feature_3d = self.resblocks_3d(feature_3d)
 
+        feature_3d = out.view(bs, self.reshape_channel, self.reshape_depth, h ,w) # torch.Size([1, 32, 16, 64, 64]),512=32*16
+        feature_3d = self.resblocks_3d(feature_3d) # torch.Size([1, 32, 16, 64, 64])
+        # 上面的步骤只对常规图片做了下采样和3D卷积融合特征，下面才会用到表情姿态系数合成新人脸
         # Transforming feature representation according to deformation and occlusion
         output_dict = {}
         if self.dense_motion_network is not None:
             dense_motion = self.dense_motion_network(feature=feature_3d, kp_driving=kp_driving,
                                                      kp_source=kp_source)
+            # {mask:torch.Size([1, 16, 16, 64, 64]), deformation:torch.Size([1, 16, 64, 64, 3]), occlusion_map:torch.Size([1, 1, 64, 64])}
             output_dict['mask'] = dense_motion['mask']
 
             # import pdb; pdb.set_trace()
@@ -233,12 +239,14 @@ class OcclusionAwareSPADEGenerator(nn.Module):
             else:
                 occlusion_map = None
             deformation = dense_motion['deformation']
-            out = self.deform_input(feature_3d, deformation)
+            out = self.deform_input(feature_3d, deformation) # torch.Size([1, 32, 16, 64, 64])
 
             bs, c, d, h, w = out.shape
-            out = out.view(bs, c*d, h, w)
+            out = out.view(bs, c*d, h, w) 
+            print(f"==>> 2.out.shape: {out.shape}") # torch.Size([1, 512, 64, 64])
             out = self.third(out)
-            out = self.fourth(out)
+            print(f"==>> 3.out.shape: {out.shape}") # torch.Size([1, 256, 64, 64])
+            out = self.fourth(out) # torch.Size([1, 256, 64, 64])
 
             # occlusion_map = torch.where(occlusion_map < 0.95, 0, occlusion_map)
             
@@ -248,7 +256,8 @@ class OcclusionAwareSPADEGenerator(nn.Module):
                 out = out * occlusion_map
 
         # Decoding part
-        out = self.decoder(out)
+        print(f"==>> 4.out.shape: {out.shape}") # torch.Size([1, 256, 64, 64])
+        out = self.decoder(out) # torch.Size([1, 3, 256, 256])
 
         output_dict["prediction"] = out
         

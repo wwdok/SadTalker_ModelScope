@@ -52,18 +52,18 @@ def make_coordinate_grid_2d(spatial_size, type):
 
 
 def make_coordinate_grid(spatial_size, type):
-    d, h, w = spatial_size
+    d, h, w = spatial_size # 16, 64, 64
     x = torch.arange(w).type(type)
     y = torch.arange(h).type(type)
     z = torch.arange(d).type(type)
 
-    x = (2 * (x / (w - 1)) - 1)
-    y = (2 * (y / (h - 1)) - 1)
-    z = (2 * (z / (d - 1)) - 1)
+    x = (2 * (x / (w - 1)) - 1) # 从-1逐渐增加到1，shape:torch.Size([64])
+    y = (2 * (y / (h - 1)) - 1) # 同上
+    z = (2 * (z / (d - 1)) - 1) # 从-1逐渐增加到1，shape:torch.Size([16])
    
-    yy = y.view(1, -1, 1).repeat(d, 1, w)
-    xx = x.view(1, 1, -1).repeat(d, h, 1)
-    zz = z.view(-1, 1, 1).repeat(1, h, w)
+    xx = x.view(1, 1, -1).repeat(d, h, 1) # torch.Size([16, 64, 64])
+    yy = y.view(1, -1, 1).repeat(d, 1, w) # 同上
+    zz = z.view(-1, 1, 1).repeat(1, h, w) # 同上
 
     meshed = torch.cat([xx.unsqueeze_(3), yy.unsqueeze_(3), zz.unsqueeze_(3)], 3)
 

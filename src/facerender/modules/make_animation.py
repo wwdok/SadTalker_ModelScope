@@ -106,15 +106,15 @@ def make_animation(source_image, source_semantics, target_semantics,
     with torch.no_grad():
         predictions = []
 
-        kp_canonical = kp_detector(source_image)
-        he_source = mapping(source_semantics)
-        kp_source = keypoint_transformation(kp_canonical, he_source)
+        kp_canonical = kp_detector(source_image) # value:torch.Size([1, 15, 3])
+        he_source = mapping(source_semantics) # yaw:torch.Size([1, 66]),pitch:torch.Size([1, 66]),torch.Size([1, 66]),t:torch.Size([1, 3]),exp:torch.Size([1, 45])
+        kp_source = keypoint_transformation(kp_canonical, he_source) # value:torch.Size([1, 15, 3])
     
-        for frame_idx in tqdm(range(target_semantics.shape[1]), 'Face Renderer:'):
+        for frame_idx in tqdm(range(target_semantics.shape[1]), 'Face Renderer:'): # target_semantics shape:torch.Size([1, 136, 73, 27])
             # still check the dimension
             # print(target_semantics.shape, source_semantics.shape)
-            target_semantics_frame = target_semantics[:, frame_idx]
-            he_driving = mapping(target_semantics_frame)
+            target_semantics_frame = target_semantics[:, frame_idx] # torch.Size([1, 73, 27])
+            he_driving = mapping(target_semantics_frame) # yaw:torch.Size([1, 66]),pitch:torch.Size([1, 66]),roll:torch.Size([1, 66]),t:torch.Size([1, 3]),exp:torch.Size([1, 45])
             if yaw_c_seq is not None:
                 he_driving['yaw_in'] = yaw_c_seq[:, frame_idx]
             if pitch_c_seq is not None:
@@ -122,10 +122,11 @@ def make_animation(source_image, source_semantics, target_semantics,
             if roll_c_seq is not None:
                 he_driving['roll_in'] = roll_c_seq[:, frame_idx] 
             
-            kp_driving = keypoint_transformation(kp_canonical, he_driving)
+            kp_driving = keypoint_transformation(kp_canonical, he_driving) # value:torch.Size([1, 15, 3])
                 
             kp_norm = kp_driving
-            out = generator(source_image, kp_source=kp_source, kp_driving=kp_norm)
+            # 每一帧的source_image和kp_source都是不变的，只有kp_driving在变
+            out = generator(source_image, kp_source=kp_source, kp_driving=kp_norm) # torch.Size([1, 3, 256, 256])
             '''
             source_image_new = out['prediction'].squeeze(1)
             kp_canonical_new =  kp_detector(source_image_new)

@@ -19,6 +19,9 @@ class Conv2d(nn.Module):
         return self.act(out)
 
 class AudioEncoder(nn.Module):
+    """
+    用于Audio2Pose或者说PoseVAE
+    """
     def __init__(self, wav2lip_checkpoint, device):
         super(AudioEncoder, self).__init__()
 
@@ -54,11 +57,15 @@ class AudioEncoder(nn.Module):
     def forward(self, audio_sequences):
         # audio_sequences = (B, T, 1, 80, 16)
         B = audio_sequences.size(0)
+        # print(f"==>> audio_sequences.shape: {audio_sequences.shape}") # torch.Size([1, 32, 1, 80, 16])，32是SEQ_LEN，属于136帧中的一段
 
         audio_sequences = torch.cat([audio_sequences[:, i] for i in range(audio_sequences.size(1))], dim=0)
+        # print(f"==>> audio_sequences.shape: {audio_sequences.shape}") # torch.Size([32, 1, 80, 16])，(B, T, 1, 80, 16)
 
         audio_embedding = self.audio_encoder(audio_sequences) # B, 512, 1, 1
+        # print(f"==>> audio_embedding.shape: {audio_embedding.shape}") # torch.Size([32, 512, 1, 1])
         dim = audio_embedding.shape[1]
         audio_embedding = audio_embedding.reshape((B, -1, dim, 1, 1))
-
+        # print(f"==>> audio_embedding.shape: {audio_embedding.shape}") # torch.Size([1, 32, 512, 1, 1])
+        # print("".center(50, "-"))
         return audio_embedding.squeeze(-1).squeeze(-1) #B seq_len+1 512 

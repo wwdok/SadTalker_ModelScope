@@ -143,13 +143,15 @@ class CropAndExtract():
                 else:
                     lm1[:, -1] = H - 1 - lm1[:, -1]
 
-                trans_params, im1, lm1, _ = align_img(frame, lm1, self.lm3d_std)
- 
+                trans_params, im1, lm1, _ = align_img(frame, lm1, self.lm3d_std) # 根据5个2d关键点对齐到标准3d关键点，trans_params里含有缩放和平移系数，im1是变换后的图片
+                im1.save(os.path.join(save_dir, pic_name+'_transformed.png'), )
                 trans_params = np.array([float(item) for item in np.hsplit(trans_params, 5)]).astype(np.float32)
                 im_t = torch.tensor(np.array(im1)/255., dtype=torch.float32).permute(2, 0, 1).to(self.device).unsqueeze(0)
                 
                 with torch.no_grad():
-                    full_coeff = self.net_recon(im_t)
+                    print("Runing 3DMM model to extract coefficients")
+                    full_coeff = self.net_recon(im_t) # 对变换后的图片三维重建，而不是直接对原图做
+                    print(f"==>> full_coeff.shape: {full_coeff.shape}") # torch.Size([1, 257])
                     coeffs = split_coeff(full_coeff)
 
                 pred_coeff = {key:coeffs[key].cpu().numpy() for key in coeffs}
@@ -163,7 +165,9 @@ class CropAndExtract():
                 video_coeffs.append(pred_coeff)
                 full_coeffs.append(full_coeff.cpu().numpy())
 
+            print(f"==>> full_coeffs[0].shape: {full_coeffs[0].shape}") # (1, 257)
             semantic_npy = np.array(video_coeffs)[:,0] 
+            print(f"==>> semantic_npy.shape: {semantic_npy.shape}") # (1, 73)
 
             savemat(coeff_path, {'coeff_3dmm': semantic_npy, 'full_3dmm': np.array(full_coeffs)[0]})
 

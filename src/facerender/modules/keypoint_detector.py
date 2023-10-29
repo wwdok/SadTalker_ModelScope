@@ -57,15 +57,15 @@ class KPDetector(nn.Module):
         if self.scale_factor != 1:
             x = self.down(x)
 
-        feature_map = self.predictor(x)
-        prediction = self.kp(feature_map)
+        feature_map = self.predictor(x) # x:torch.Size([1, 3, 64, 64])， feature_map:torch.Size([1, 32, 16, 64, 64])
+        prediction = self.kp(feature_map) # torch.Size([1, 15, 16, 64, 64])
 
         final_shape = prediction.shape
-        heatmap = prediction.view(final_shape[0], final_shape[1], -1)
+        heatmap = prediction.view(final_shape[0], final_shape[1], -1) # torch.Size([1, 15, 65536])
         heatmap = F.softmax(heatmap / self.temperature, dim=2)
-        heatmap = heatmap.view(*final_shape)
+        heatmap = heatmap.view(*final_shape) # torch.Size([1, 15, 16, 64, 64])
 
-        out = self.gaussian2kp(heatmap)
+        out = self.gaussian2kp(heatmap) # torch.Size([1, 15, 3])
 
         if self.jacobian is not None:
             jacobian_map = self.jacobian(feature_map)
