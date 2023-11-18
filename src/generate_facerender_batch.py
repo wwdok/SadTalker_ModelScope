@@ -28,11 +28,10 @@ def get_facerender_data(coeff_path, pic_path, first_coeff_path, audio_path,
     generated_dict = scio.loadmat(coeff_path) # coeff_3dmm:(136, 70)
 
     if 'full' not in preprocess.lower():
-        source_semantics = source_semantics_dict['coeff_3dmm'][:1,:70]         #1 70
+        source_semantics = source_semantics_dict['coeff_3dmm'][:1,:70] # (1, 70)
         generated_3dmm = generated_dict['coeff_3dmm'][:,:70]
-
     else:
-        source_semantics = source_semantics_dict['coeff_3dmm'][:1,:73] # (1, 73)
+        source_semantics = source_semantics_dict['coeff_3dmm'][:1,:73] # (1, 73)，全身模式的话，还会用到第一帧图片的三个系数： scale, tx, ty，相关代码位于src/face3d/util/preprocess.py#L77和src/utils/preprocess.py#L163
         generated_3dmm = generated_dict['coeff_3dmm'][:,:70] # (136, 70)
 
     source_semantics_new = transform_semantic_1(source_semantics, semantic_radius) # (73, 27)
@@ -43,10 +42,11 @@ def get_facerender_data(coeff_path, pic_path, first_coeff_path, audio_path,
     # target 
     generated_3dmm[:, :64] = generated_3dmm[:, :64] * expression_scale # 缩放表情系数部分
 
-    if 'full' in preprocess.lower():
+    # full全身模式代表着输出的人脸可能是倾斜的，而驱动时是使用矫正过后的，驱动完要倾斜粘贴回去，相关代码还没找到
+    if 'full' in preprocess.lower(): # 全身模式的话，把 scale, tx, ty这三个参数广播到每一帧
         generated_3dmm = np.concatenate([generated_3dmm, np.repeat(source_semantics[:,70:], generated_3dmm.shape[0], axis=0)], axis=1) # (136, 73)
 
-    if still_mode:
+    if still_mode: # 静止模式的话，头部运动的6+3个参数都使用第一帧画面的参数
         generated_3dmm[:, 64:] = np.repeat(source_semantics[:, 64:], generated_3dmm.shape[0], axis=0)
 
     # 把generated_3dmm写入txt_path+'.txt'文件
@@ -69,7 +69,7 @@ def get_facerender_data(coeff_path, pic_path, first_coeff_path, audio_path,
         for _ in range(batch_size-remainder):
             target_semantics_list.append(target_semantics)
 
-    target_semantics_np = np.array(target_semantics_list)             #frame_num 70 semantic_radius*2+1
+    target_semantics_np = np.array(target_semantics_list) # [frame_num, 70 or 73, semantic_radius*2+1]
     # print(f"==>> target_semantics_np.shape: {target_semantics_np.shape}") # (136, 73, 27)，可见合成每一帧画面时，会感知到前后27帧的73维姿态数据
     target_semantics_np = target_semantics_np.reshape(batch_size, -1, target_semantics_np.shape[-2], target_semantics_np.shape[-1])
     print(f"==>> target_semantics_np.shape: {target_semantics_np.shape}") # (1, 136, 73, 27)
